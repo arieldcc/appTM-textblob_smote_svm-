@@ -1,0 +1,185 @@
+{% extends "layouts/master.html" %}
+{% block title %} Halaman Utama {% endblock %}
+{% block css %}
+<!-- DataTables CSS -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        /* Style untuk Card */
+        .card {
+            transition: box-shadow 0.3s;
+            border: none;
+        }
+        .card:hover {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        /* Menambahkan warna background khusus untuk setiap jenis sentimen */
+        .card.all {
+            background-color: #292ec9;
+            color: white;
+        }
+        .card.positive {
+            background-color: #28a745;
+            color: white;
+        }
+        .card.negative {
+            background-color: #dc3545;
+            color: white;
+        }
+        .card.neutral {
+            background-color: #6c757d;
+            color: white;
+        }
+        /* Menambahkan padding dan jarak antar card */
+        .card-body {
+            padding: 20px;
+        }
+        .card h5 {
+            font-size: 1.1rem;
+        }
+        .fs-4 {
+            font-size: 1.5rem;
+        }
+        .fw-bold {
+            font-weight: bold;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4">Dashboard Analisis Sentimen</h1>
+    
+    <!-- Row with Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card all">
+                <div class="card-body">
+                    <h5>Judul yang Dianalisis</h5>
+                    <p class="fs-4 fw-bold">{{ data.total_titles }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card positive">
+                <div class="card-body">
+                    <h5>Sentimen Positif</h5>
+                    <p class="fs-4 fw-bold">{{ data.positive_percentage }}%</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card negative">
+                <div class="card-body">
+                    <h5>Sentimen Negatif</h5>
+                    <p class="fs-4 fw-bold">{{ data.negative_percentage }}%</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card neutral">
+                <div class="card-body">
+                    <h5>Sentimen Netral</h5>
+                    <p class="fs-4 fw-bold">{{ data.neutral_percentage }}%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Placeholder with Canvas -->
+    <div class="card p-4 mb-4">
+        <h5>Distribusi Sentimen</h5>
+        <div style="height: 300px; background: #f8f9fa; display: flex; justify-content: center; align-items: center;">
+            <canvas id="sentimentChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Recent Analysis Table -->
+    <div class="card p-4">
+        <h5>Analisis Terbaru</h5>
+        <table class="table mt-3 table-hover" id="recentAnalysisTable">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Judul Berita</th>
+                    <th>Sentimen</th>
+                    <th>Skor</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for analysis in data.recent_analyses %}
+                    <tr>
+                        <td>{{ loop.index }}</td>  <!-- This will give the current index -->
+                        <td>{{ analysis['judul_berita'] }}</td>
+                        <td>{{ analysis['hasil'] }}</td>
+                        <td>{{ analysis['score'] }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>    
+
+</div>
+{% endblock %}
+
+{% block js %}
+    <!-- jQuery (required for DataTables) -->
+    <script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- DataTables JS -->
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+
+    <!-- Tambahkan Chart.js melalui CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Inisialisasi DataTable
+            $('table').DataTable();
+        });
+
+        // Ambil data dari template Flask
+        const positivePercentage = {{ data.positive_percentage }};
+        const negativePercentage = {{ data.negative_percentage }};
+        const neutralPercentage = {{ data.neutral_percentage }};
+        
+        // Konfigurasi data untuk grafik
+        const sentimentData = {
+            labels: ['Positif', 'Negatif', 'Netral'],  // Label untuk setiap sentimen
+            datasets: [{
+                label: 'Distribusi Sentimen',
+                data: [positivePercentage, negativePercentage, neutralPercentage],  // Data distribusi
+                backgroundColor: ['#4caf50', '#f44336', '#2196f3'],  // Warna untuk setiap segmen
+                borderColor: ['#4caf50', '#f44336', '#2196f3'],  // Warna border untuk setiap segmen
+                borderWidth: 1
+            }]
+        };
+    
+        // Konfigurasi grafik
+        const config = {
+            type: 'pie',  // Tipe grafik: pie chart
+            data: sentimentData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                return tooltipItem.label + ': ' + tooltipItem.raw.toFixed(2) + '%';  // Format label tooltips
+                            }
+                        }
+                    }
+                }
+            }
+        };
+    
+        // Menampilkan grafik pada canvas
+        const ctx = document.getElementById('sentimentChart').getContext('2d');
+        new Chart(ctx, config);
+    </script>    
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "layouts/master.html" %}
+{% block title %} Analisis Sentimen {% endblock %}
+{% block content %}
+    <h1 class="mb-4 text-center">Proses Analisis Sentimen</h1>
+            
+    <!-- Input Form -->
+    <div class="card p-4 mb-4">
+        <h5>Masukkan Judul Berita</h5>
+        <form id="analysisForm">
+            <div class="mb-3">
+                <label for="newsTitle" class="form-label">Judul Berita</label>
+                <input type="text" id="newsTitle" class="form-control" placeholder="Masukkan judul berita di sini..." required>
+            </div>
+            <button type="button" id="analyzeBtn" class="btn btn-primary w-100">Analisis Sentimen</button>
+        </form>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loading" class="text-center my-4" style="display: none;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Menganalisis Sentimen...</p>
+    </div>
+
+    <!-- Result Card -->
+    <div id="resultCard" class="card p-4" style="display: none;">
+        <h5>Hasil Analisis</h5>
+        <p><strong>Judul Berita:</strong> <span id="resultTitle"></span></p>
+        <p><strong>Sentimen:</strong> <span id="resultSentiment"></span></p>
+        <p><strong>Skor:</strong> <span id="resultScore"></span></p>
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script>
+        // Event Listener for Analysis Button
+        document.getElementById('analyzeBtn').addEventListener('click', function () {
+            const newsTitle = document.getElementById('newsTitle').value;
+
+            if (newsTitle.trim() === "") {
+                alert("Harap masukkan judul berita.");
+                return;
+            }
+
+            // Show loading spinner and hide result card
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('resultCard').style.display = 'none';
+
+            // Kirim data ke server Flask
+            fetch('/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ title: newsTitle }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loading spinner
+                document.getElementById('loading').style.display = 'none';
+
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+
+                // Display Result
+                document.getElementById('resultTitle').textContent = data.title;
+                document.getElementById('resultSentiment').textContent = data.sentiment;
+                document.getElementById('resultScore').textContent = data.score;
+
+                // Mengubah warna latar belakang berdasarkan sentimen
+                const resultCard = document.getElementById('resultCard');
+                const sentiment = data.sentiment;
+                const score = data.score;
+
+                // Set default background color as danger
+                resultCard.classList.remove('bg-primary', 'bg-warning', 'bg-info', 'bg-danger');
+
+                // Mengubah warna latar belakang berdasarkan sentimen
+                if (sentiment === 'Positif') {
+                    resultCard.classList.add('bg-primary'); // Primary for positive sentiment
+                } else if (sentiment === 'Negatif') {
+                    resultCard.classList.add('bg-warning'); // Warning for negative sentiment
+                } else if (sentiment === 'Netral') {
+                    resultCard.classList.add('bg-info'); // Info for neutral sentiment
+                } else {
+                    resultCard.classList.add('bg-danger'); // Danger for unknown or error
+                }
+
+                // Show the result card
+                resultCard.style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan pada analisis.');
+                document.getElementById('loading').style.display = 'none';
+            });
+        });
+    </script>
+{% endblock %}

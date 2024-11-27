@@ -1,0 +1,8 @@
+1. app ini menggunakan python==3.11.5
+2. buat environment: python -m venv venv
+3. Jangan lupa aktif pada lingkungan app dengan perintah:
+    a. Windows: venv\Scripts\activate
+    b. Mac/Linux: source venv/bin/activate
+4. install flask: pip install flask
+5. lihat library serta versi yang digunakan pada app: pip list
+6. menyimpan library dalam file requirements.txt: pip freeze > requirements.txt
